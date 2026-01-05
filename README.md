@@ -1,7 +1,3 @@
-Aquí tienes un archivo **FRONTEND.md** bien estructurado, limpio y profesional, diseñado específicamente para el código que hemos construido. Incluye instrucciones de instalación, capturas (marcadores), arquitectura y los endpoints que estás utilizando.
-
----
-
 # 📝 FRONTEND.md - Project Management System
 
 Este es el cliente web desarrollado en **Vanilla JavaScript** para interactuar con la API de gestión de proyectos y tareas. El sistema permite la autenticación segura mediante JWT, creación de proyectos y control del ciclo de vida de tareas.
