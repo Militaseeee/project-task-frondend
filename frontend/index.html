@@ -56,6 +56,36 @@
         </div>
     </main>
 
+    <div id="project-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Create New Project</h3>
+        <form id="project-form">
+            <input type="text" id="proj-name" placeholder="Project Name" required>
+            <textarea id="proj-desc" placeholder="Project Description"></textarea>
+            <div class="modal-actions">
+                <button type="submit" class="btn-success">Save</button>
+                <button type="button" class="btn-secondary" onclick="closeModal('project-modal')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="task-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3 id="task-modal-title">Project Tasks</h3>
+        <div id="task-list" class="task-container">
+            </div>
+        <hr>
+        <h4>Add New Task</h4>
+        <form id="task-form">
+            <input type="hidden" id="current-project-id">
+            <input type="text" id="task-title" placeholder="Task Title" required>
+            <button type="submit" class="btn-primary">Add Task</button>
+        </form>
+        <button type="button" class="btn-secondary" onclick="closeModal('task-modal')">Close</button>
+    </div>
+</div>
+
     <script src="js/app.js"></script>
 </body>
 </html>
