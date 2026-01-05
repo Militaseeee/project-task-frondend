@@ -28,3 +28,15 @@ button { width: 100%; padding: 12px; border: none; border-radius: 6px; cursor: p
 .toast { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 5px; color: white; background: var(--text); z-index: 3000; }
 .toast.success { background: var(--success); }
 .toast.danger { background: var(--danger); }
+
+.project-card .btn-success {
+    background-color: var(--success);
+    color: white;
+    font-size: 11px;
+    height: fit-content;
+}
+
+.task-item button {
+    font-size: 12px;
+    line-height: 1;
+}

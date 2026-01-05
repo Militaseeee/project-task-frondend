@@ -197,14 +197,21 @@ async function viewTasks(projectId, projectName) {
                 list.innerHTML = "<p>No hay tareas aún.</p>";
             } else {
                 tasks.forEach(t => {
-                    // Usamos t.completed para mostrar el estado
-                    const statusText = t.completed ? "✅ Completada" : "⏳ Pendiente";
+                    const completeBtn = !t.completed ? 
+                        `<button class="btn-success" style="width:auto; padding:2px 8px; font-size:12px;" 
+                            onclick="completeTask('${t.id}', '${projectId}', '${projectName}')">
+                            Completar
+                         </button>` : 
+                        `<span style="color:green; font-weight:bold;">✅ Hecha</span>`;
+
                     list.innerHTML += `
-                        <div class="task-item">
+                        <div class="task-item" style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #eee;">
                             <span>${t.title}</span>
-                            <span class="badge">${statusText}</span>
-                        </div>`;
+                            ${completeBtn}
+                        </div>
+                    `;
                 });
+            
             }
         }
     } catch (e) { console.error("Error cargando tareas:", e); }
@@ -242,6 +249,48 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
         console.error("Fallo en la petición de tarea:", err);
     }
 });
+
+
+// --- COMPLETAR TAREA (PATCH /api/tasks/{id}/complete) ---
+async function completeTask(taskId, projectId, projectName) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/tasks/${taskId}/complete`, {
+            method: 'PATCH', // MÉTODO PATCH
+            headers: { 
+                'Authorization': `Bearer ${token}`
+                // Nota: No envíes Content-Type si no envías un body JSON, 
+                // esto a veces ayuda a evitar problemas de Preflight.
+            }
+        });
+
+        if (res.ok) {
+            showToast("Tarea completada ✅", "success");
+            viewTasks(projectId, projectName);
+        } else {
+            console.error("Error al completar:", res.status);
+        }
+    } catch (err) {
+        console.error("Error en completeTask:", err);
+    }
+}
+
+
+async function activateProject(projectId) {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            showToast("Proyecto Activado 🚀", "success");
+            loadProjects(); // Recarga las tarjetas del dashboard
+        }
+    } catch (err) { console.error(err); }
+}
+
 
 // --- GESTIÓN DE MODALES ---
 function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
