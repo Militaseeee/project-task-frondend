@@ -92,58 +92,87 @@ function initDashboard() {
 
 async function loadProjects() {
     const token = localStorage.getItem('token');
+    if (!token) {
+        console.warn("No hay token disponible");
+        return;
+    }
+
     try {
         const res = await fetch(`${API_BASE}/projects`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            method: 'GET',
+            headers: { 
+                'Authorization': `Bearer ${token}`
+                // Quitamos 'Content-Type' y 'Accept' en el GET para intentar evitar validaciones extra del navegador
+            }
         });
+
+        // Si la respuesta no es 200 OK, lanzamos error para ver el status en consola
+        if (!res.ok) {
+            console.error("Error del servidor. Status:", res.status);
+            if(res.status === 403 || res.status === 401) {
+                showToast("Sesión expirada o sin permisos", "danger");
+            }
+            return;
+        }
+
         const projects = await res.json();
         const list = document.getElementById('project-list');
         list.innerHTML = "";
 
-        if (!projects || projects.length === 0) {
-            list.innerHTML = '<p class="empty-msg">No hay proyectos disponibles.</p>';
+        if (projects.length === 0) {
+            list.innerHTML = '<p class="empty-msg">No hay proyectos disponibles aún.</p>';
             return;
         }
 
         projects.forEach(p => {
+            // Recordamos: NO usamos p.description porque no existe en tu Back
             list.innerHTML += `
                 <div class="project-card">
                     <h4>${p.name}</h4>
-                    <p>${p.description || 'Sin descripción'}</p>
-                    <small>Estado: ${p.status}</small>
-                    <button class="btn-outline" style="margin-top:10px" onclick="viewTasks(${p.id}, '${p.name}')">
+                    <p>Estado: ${p.status}</p>
+                    <button class="btn-outline" style="margin-top:10px" onclick="viewTasks('${p.id}', '${p.name}')">
                         📂 Ver Tareas
                     </button>
                 </div>
             `;
         });
-    } catch (err) { showToast("Error al cargar proyectos", "danger"); }
+    } catch (err) {
+        console.error("Error crítico en fetch Proyectos:", err);
+        showToast("Error de conexión (CORS)", "danger");
+    }
 }
 
 // --- PROYECTOS Y TAREAS ---
 document.getElementById('project-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
-    const body = {
-        name: document.getElementById('proj-name').value,
-        description: document.getElementById('proj-desc').value,
-        status: 'ACTIVE'
-    };
+    const nameValue = document.getElementById('proj-name').value;
 
-    const res = await fetch(`${API_BASE}/projects`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(body)
-    });
+    try {
+        const res = await fetch(`${API_BASE}/projects`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                name: nameValue // TU BACK SOLO RECIBE ESTO
+            })
+        });
 
-    if (res.ok) {
-        showToast("Proyecto creado", "success");
-        closeModal('project-modal');
-        loadProjects();
-        e.target.reset();
+        if (res.ok) {
+            showToast("Proyecto creado con éxito", "success");
+            closeModal('project-modal');
+            loadProjects();
+            e.target.reset();
+        } else {
+            const errorData = await res.json();
+            console.error("Error del servidor al crear:", errorData);
+            showToast("Error al crear: " + (errorData.message || ""), "danger");
+        }
+    } catch (err) {
+        console.error("Fallo al crear proyecto (CORS o Red):", err);
+        showToast("Error de conexión. Revisa el CORS en el servidor.", "danger");
     }
 });
 
@@ -154,37 +183,63 @@ async function viewTasks(projectId, projectName) {
     
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE}/tasks?projectId=${projectId}`, {
+        // Asumiendo que el GET de tareas es /api/projects/{id}/tasks
+        const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
         const tasks = await res.json();
         const list = document.getElementById('task-list');
-        list.innerHTML = tasks.length ? "" : "<p>No hay tareas.</p>";
-        
-        tasks.forEach(t => {
-            list.innerHTML += `<div class="task-item"><span>${t.title}</span><span class="badge">${t.status || 'PENDIENTE'}</span></div>`;
-        });
-    } catch (e) { console.error(e); }
+        list.innerHTML = "";
+
+        if (Array.isArray(tasks)) {
+            if (tasks.length === 0) {
+                list.innerHTML = "<p>No hay tareas aún.</p>";
+            } else {
+                tasks.forEach(t => {
+                    // Usamos t.completed para mostrar el estado
+                    const statusText = t.completed ? "✅ Completada" : "⏳ Pendiente";
+                    list.innerHTML += `
+                        <div class="task-item">
+                            <span>${t.title}</span>
+                            <span class="badge">${statusText}</span>
+                        </div>`;
+                });
+            }
+        }
+    } catch (e) { console.error("Error cargando tareas:", e); }
 }
 
 document.getElementById('task-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem('token');
     const projectId = document.getElementById('current-project-id').value;
     const title = document.getElementById('task-title').value;
-    const token = localStorage.getItem('token');
 
-    const res = await fetch(`${API_BASE}/tasks`, {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ projectId, title })
-    });
+    try {
+        // La URL ahora incluye el projectId en la ruta: /api/projects/{id}/tasks
+        const res = await fetch(`${API_BASE}/projects/${projectId}/tasks`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title: title }) // Solo enviamos el título
+        });
 
-    if (res.ok) {
-        viewTasks(projectId, document.getElementById('task-modal-title').innerText.replace('Tareas: ', ''));
-        e.target.reset();
+        if (res.ok) {
+            // Refrescar la lista de tareas
+            const projectName = document.getElementById('task-modal-title').innerText.replace('Tareas: ', '');
+            viewTasks(projectId, projectName);
+            e.target.reset();
+            showToast("Tarea añadida", "success");
+        } else {
+            const errData = await res.json();
+            console.error("Error al crear tarea:", errData);
+            showToast("Error al crear tarea", "danger");
+        }
+    } catch (err) {
+        console.error("Fallo en la petición de tarea:", err);
     }
 });
 
