@@ -18,65 +18,72 @@ function showSection(section) {
 // --- LOGICA DE ACCESO (LOGIN) ---
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const usernameInput = document.getElementById('login-user').value;
-    const passwordInput = document.getElementById('login-pass').value;
+    const userVal = document.getElementById('login-user').value;
+    const passVal = document.getElementById('login-pass').value;
 
     try {
         const res = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                username: usernameInput, // REVISA: Si en Java tu DTO usa "email", cambia esto a email: usernameInput
-                password: passwordInput 
+                username: userVal, // REVISA: Si falla con 400, cambia 'username' por 'email'
+                password: passVal 
             })
         });
 
         if (!res.ok) {
             const errorData = await res.json();
-            console.error("DETALLE ERROR 400:", errorData);
+            console.error("Error del servidor:", errorData);
             showToast(errorData.message || "Credenciales incorrectas", "danger");
             return;
         }
 
         const data = await res.json();
-        if (data.token) {
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', usernameInput);
+        // Detección automática del nombre del campo del token
+        const token = data.token || data.accessToken || data.jwt;
+
+        if (token) {
+            localStorage.setItem('token', token);
+            localStorage.setItem('username', userVal);
             showToast("¡Bienvenido!", "success");
             initDashboard();
+        } else {
+            console.error("Respuesta sin token:", data);
+            showToast("Error: El servidor no envió un token válido", "danger");
         }
     } catch (err) {
-        showToast("Error de conexión con el servidor", "danger");
+        showToast("Error de conexión", "danger");
     }
 });
 
 // --- REGISTRO ---
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = document.getElementById('reg-user').value;
-    const email = document.getElementById('reg-email').value;
-    const password = document.getElementById('reg-pass').value;
+    const body = {
+        username: document.getElementById('reg-user').value,
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-pass').value
+    };
 
     try {
         const res = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
+            body: JSON.stringify(body)
         });
 
         if (res.ok) {
-            showToast("Cuenta creada. Ya puedes entrar.", "success");
+            showToast("Cuenta creada exitosamente", "success");
             showSection('login');
         } else {
-            showToast("Error al registrar usuario", "danger");
+            showToast("Error al registrar", "danger");
         }
-    } catch (err) {
-        showToast("Error de servidor", "danger");
-    }
+    } catch (err) { showToast("Error de red", "danger"); }
 });
 
 // --- DASHBOARD ---
 function initDashboard() {
+    // Estas líneas son las que hacen la "redirección" visual
     document.getElementById('auth-container').classList.add('hidden');
     document.getElementById('dashboard-section').classList.remove('hidden');
     document.getElementById('display-username').innerText = localStorage.getItem('username');
@@ -93,8 +100,8 @@ async function loadProjects() {
         const list = document.getElementById('project-list');
         list.innerHTML = "";
 
-        if (projects.length === 0) {
-            list.innerHTML = '<p class="empty-msg">No hay proyectos aún.</p>';
+        if (!projects || projects.length === 0) {
+            list.innerHTML = '<p class="empty-msg">No hay proyectos disponibles.</p>';
             return;
         }
 
@@ -110,43 +117,39 @@ async function loadProjects() {
                 </div>
             `;
         });
-    } catch (err) {
-        showToast("Error al cargar proyectos", "danger");
-    }
+    } catch (err) { showToast("Error al cargar proyectos", "danger"); }
 }
 
-// --- CREAR PROYECTO ---
+// --- PROYECTOS Y TAREAS ---
 document.getElementById('project-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('proj-name').value;
-    const description = document.getElementById('proj-desc').value;
     const token = localStorage.getItem('token');
+    const body = {
+        name: document.getElementById('proj-name').value,
+        description: document.getElementById('proj-desc').value,
+        status: 'ACTIVE'
+    };
 
-    try {
-        const res = await fetch(`${API_BASE}/projects`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name, description, status: 'ACTIVE' })
-        });
+    const res = await fetch(`${API_BASE}/projects`, {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+    });
 
-        if (res.ok) {
-            showToast("Proyecto guardado", "success");
-            closeModal('project-modal');
-            loadProjects();
-            e.target.reset();
-        }
-    } catch (err) {
-        showToast("Error al crear proyecto", "danger");
+    if (res.ok) {
+        showToast("Proyecto creado", "success");
+        closeModal('project-modal');
+        loadProjects();
+        e.target.reset();
     }
 });
 
-// --- TAREAS ---
 async function viewTasks(projectId, projectName) {
     document.getElementById('current-project-id').value = projectId;
-    document.getElementById('task-modal-title').innerText = `Tareas de: ${projectName}`;
+    document.getElementById('task-modal-title').innerText = `Tareas: ${projectName}`;
     openModal('task-modal');
     
     const token = localStorage.getItem('token');
@@ -159,12 +162,7 @@ async function viewTasks(projectId, projectName) {
         list.innerHTML = tasks.length ? "" : "<p>No hay tareas.</p>";
         
         tasks.forEach(t => {
-            list.innerHTML += `
-                <div class="task-item">
-                    <span>${t.title}</span>
-                    <span class="badge">${t.status || 'PENDIENTE'}</span>
-                </div>
-            `;
+            list.innerHTML += `<div class="task-item"><span>${t.title}</span><span class="badge">${t.status || 'PENDIENTE'}</span></div>`;
         });
     } catch (e) { console.error(e); }
 }
@@ -185,8 +183,7 @@ document.getElementById('task-form').addEventListener('submit', async (e) => {
     });
 
     if (res.ok) {
-        const name = document.getElementById('task-modal-title').innerText.replace('Tareas de: ', '');
-        viewTasks(projectId, name);
+        viewTasks(projectId, document.getElementById('task-modal-title').innerText.replace('Tareas: ', ''));
         e.target.reset();
     }
 });
@@ -196,11 +193,7 @@ function openModal(id) { document.getElementById(id).classList.remove('hidden');
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
 document.getElementById('btn-new-project').onclick = () => openModal('project-modal');
-
-document.getElementById('logout-btn').onclick = () => {
-    localStorage.clear();
-    location.reload();
-};
+document.getElementById('logout-btn').onclick = () => { localStorage.clear(); location.reload(); };
 
 // Verificar sesión al cargar
 if (localStorage.getItem('token')) initDashboard();

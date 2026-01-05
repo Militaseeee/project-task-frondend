@@ -7,31 +7,28 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
     <div id="toast" class="toast hidden"></div>
 
     <main id="auth-container" class="auth-card">
         <section id="login-section">
             <h1>Login</h1>
-            <p>Enter your credentials to manage your projects.</p>
             <form id="login-form">
                 <input type="text" id="login-user" placeholder="Username" required>
                 <input type="password" id="login-pass" placeholder="Password" required>
                 <button type="submit" class="btn-primary">Sign In</button>
             </form>
-            <p class="toggle-text">Don't have an account? <span onclick="showSection('register')">Register here</span></p>
+            <p class="toggle-text">¿No tienes cuenta? <span onclick="showSection('register')">Regístrate</span></p>
         </section>
 
         <section id="register-section" class="hidden">
-            <h1>Create Account</h1>
-            <p>Join us to start organizing your tasks.</p>
+            <h1>Registro</h1>
             <form id="register-form">
                 <input type="text" id="reg-user" placeholder="Username" required>
                 <input type="email" id="reg-email" placeholder="Email" required>
                 <input type="password" id="reg-pass" placeholder="Password" required>
-                <button type="submit" class="btn-success">Create Account</button>
+                <button type="submit" class="btn-success">Crear Cuenta</button>
             </form>
-            <p class="toggle-text">Already have an account? <span onclick="showSection('login')">Back to Login</span></p>
+            <p class="toggle-text">¿Ya tienes cuenta? <span onclick="showSection('login')">Inicia Sesión</span></p>
         </section>
     </main>
 
@@ -43,48 +40,42 @@
                 <button id="logout-btn" class="btn-outline">Logout</button>
             </div>
         </nav>
-
-        <div class="container">
-            <header class="content-header">
-                <h3>My Projects</h3>
-                <button id="btn-new-project" class="btn-primary">+ Add Project</button>
+        <div class="container" style="padding: 20px 50px;">
+            <header style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Mis Proyectos</h3>
+                <button id="btn-new-project" class="btn-primary" style="width: auto;">+ Nuevo Proyecto</button>
             </header>
-
-            <div id="project-list" class="project-grid">
-                <p class="empty-msg">No projects found. Create your first one!</p>
-            </div>
+            <div id="project-list" class="project-grid"></div>
         </div>
     </main>
 
     <div id="project-modal" class="modal hidden">
-    <div class="modal-content">
-        <h3>Create New Project</h3>
-        <form id="project-form">
-            <input type="text" id="proj-name" placeholder="Project Name" required>
-            <textarea id="proj-desc" placeholder="Project Description"></textarea>
-            <div class="modal-actions">
-                <button type="submit" class="btn-success">Save</button>
-                <button type="button" class="btn-secondary" onclick="closeModal('project-modal')">Cancel</button>
-            </div>
-        </form>
+        <div class="modal-content">
+            <h3>Nuevo Proyecto</h3>
+            <form id="project-form">
+                <input type="text" id="proj-name" placeholder="Nombre" required>
+                <textarea id="proj-desc" placeholder="Descripción" style="width:100%; margin: 10px 0; padding: 10px; border-radius: 6px; border: 1px solid #d1d5db;"></textarea>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-success">Guardar</button>
+                    <button type="button" class="btn-secondary" onclick="closeModal('project-modal')">Cancelar</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
-<div id="task-modal" class="modal hidden">
-    <div class="modal-content">
-        <h3 id="task-modal-title">Project Tasks</h3>
-        <div id="task-list" class="task-container">
-            </div>
-        <hr>
-        <h4>Add New Task</h4>
-        <form id="task-form">
-            <input type="hidden" id="current-project-id">
-            <input type="text" id="task-title" placeholder="Task Title" required>
-            <button type="submit" class="btn-primary">Add Task</button>
-        </form>
-        <button type="button" class="btn-secondary" onclick="closeModal('task-modal')">Close</button>
+    <div id="task-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="task-modal-title">Tareas</h3>
+            <div id="task-list" class="task-container"></div>
+            <hr>
+            <form id="task-form">
+                <input type="hidden" id="current-project-id">
+                <input type="text" id="task-title" placeholder="Nueva Tarea" required>
+                <button type="submit" class="btn-primary">Añadir</button>
+            </form>
+            <button class="btn-secondary" style="margin-top:10px" onclick="closeModal('task-modal')">Cerrar</button>
+        </div>
     </div>
-</div>
 
     <script src="js/app.js"></script>
 </body>
